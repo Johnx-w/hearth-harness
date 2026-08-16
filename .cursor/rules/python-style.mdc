@@ -1,0 +1,13 @@
+---
+description: Python style for Hearth
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python
+
+- Indent with tabs, not spaces.
+- Python 3.11+. Type hints on public functions.
+- Tool handlers are `Callable[[dict], str]`. They return text, they do not talk to the loop.
+- Inject `LLMClient`; tests use `FakeClient`. Do not call the network in pytest.
+- Do not add dependencies unless `pyproject.toml` is updated in the same change.
