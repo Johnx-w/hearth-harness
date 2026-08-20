@@ -30,6 +30,7 @@ class Session:
 	max_turns: int | None = None
 	max_tokens: int = DEFAULT_MAX_TOKENS
 	turns: int = 0
+	allow_subagent: bool = True
 
 
 def tool_result(tool_use_id: str, content: str) -> dict[str, str]:
@@ -54,7 +55,7 @@ def run_turn(session: Session) -> TurnResult:
 
 		inject_inbound(session.messages)
 		prepare_context(session.messages, session.active_request)
-		tools, handlers = assemble_tool_pool(session.workspace, session.todos)
+		tools, handlers = assemble_tool_pool(session.workspace, session.todos, session)
 		system = assemble_system_prompt(session.workspace)
 
 		response = session.client.complete(

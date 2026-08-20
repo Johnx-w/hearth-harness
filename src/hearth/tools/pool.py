@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from hearth.memory import MEMORY_TOOL, write_memory
 from hearth.skills import SKILL_TOOL, load_skill
 from hearth.tools.bash import bash_tool, run_bash
 from hearth.tools.filesystem import FILE_TOOLS, WorkspaceFS
+from hearth.tools.subagent import SUBAGENT_TOOL, run_subagent
 from hearth.tools.todo import TODO_TOOL, TodoList
 
 Handler = Callable[[dict], str]
@@ -15,6 +17,7 @@ Handler = Callable[[dict], str]
 def assemble_tool_pool(
 	workspace: Path,
 	todos: TodoList,
+	session: Any | None = None,
 ) -> tuple[list[dict], dict[str, Handler]]:
 	"""Rebuild schemas and handlers each turn. MCP/Workflow patch here later."""
 	fs = WorkspaceFS(workspace)
@@ -30,4 +33,7 @@ def assemble_tool_pool(
 		"load_skill": lambda args: load_skill(args, workspace),
 		"memory_write": lambda args: write_memory(args, workspace),
 	}
+	if session is not None and getattr(session, "allow_subagent", True):
+		schemas.append(SUBAGENT_TOOL)
+		handlers["subagent"] = lambda args: run_subagent(args, session)
 	return schemas, handlers
