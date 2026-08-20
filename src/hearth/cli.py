@@ -9,7 +9,7 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 
 from hearth.config import max_turns, model_id, workspace_root
-from hearth.goal import GoalGate
+from hearth.goal import GoalGate, apply_goal_command, make_llm_evaluator
 from hearth.hooks import Hooks
 from hearth.llm import AnthropicClient
 from hearth.loop import Session, last_assistant_text, run_turn
@@ -56,7 +56,7 @@ def build_session(
 		client=client,
 		model=model_id(),
 		hooks=hooks,
-		goal=GoalGate(),
+		goal=GoalGate(evaluator=make_llm_evaluator(client, model_id())),
 		max_turns=max_turns(),
 		mcp=hub,
 	)
@@ -73,6 +73,7 @@ def _log_tool(block: ToolUse, output: str) -> None:
 
 
 def run_query(session: Session, query: str) -> str:
+	query = apply_goal_command(session, query)
 	session.hooks.emit("UserPromptSubmit", query)
 	session.active_request = query
 	session.messages.append({"role": "user", "content": query})

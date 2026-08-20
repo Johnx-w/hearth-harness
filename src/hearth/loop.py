@@ -4,7 +4,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from hearth.background import inject_inbound, should_run_background, start_background
+from hearth.background import (
+	inject_inbound,
+	is_background_running,
+	should_run_background,
+	start_background,
+	wait_for_background,
+)
 from hearth.compact import prepare_context
 from hearth.cron import CronBook
 from hearth.goal import GoalGate
@@ -36,6 +42,8 @@ class Session:
 	allow_subagent: bool = True
 	inbound: list[dict[str, Any]] = field(default_factory=list)
 	sync_background: bool = False
+	background_threads: list[Any] = field(default_factory=list)
+	background_wait_timeout: float = 30.0
 	mcp: McpHub = field(default_factory=McpHub)
 	workflows: WorkflowRegistry = field(default_factory=WorkflowRegistry)
 
@@ -82,6 +90,21 @@ def run_turn(session: Session) -> TurnResult:
 
 		if not response.tool_uses:
 			decision = _decide_stop(session)
+			if decision.action == "defer":
+				wait_for_background(session)
+				if session.inbound:
+					continue
+				session.messages.append(
+					{
+						"role": "user",
+						"content": (
+							"[Goal deferred]\n"
+							f"Evaluator: {decision.reason}\n"
+							"Wait for background work, then surface the missing evidence."
+						),
+					}
+				)
+				continue
 			if decision.action == "block":
 				session.messages.append(
 					{
@@ -95,6 +118,8 @@ def run_turn(session: Session) -> TurnResult:
 				)
 				continue
 			session.hooks.emit("Stop", session.messages)
+			if session.goal.active:
+				session.goal.clear()
 			return TurnResult(
 				text=response.text,
 				status=decision.action,
@@ -132,7 +157,7 @@ def run_turn(session: Session) -> TurnResult:
 def _decide_stop(session: Session) -> StopDecision:
 	return session.goal.evaluate_after_turn(
 		session.messages,
-		background_running=False,
+		background_running=is_background_running(session),
 	)
 
 

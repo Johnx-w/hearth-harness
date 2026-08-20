@@ -31,11 +31,11 @@
 
 ## v2 编排与收口
 
-- Task Graph 文件
-- Teammate + 任务绑定 Worktree（记住：不是沙箱）
-- Cron 至少一次投递
-- Workflow 工具 + journal 续跑
-- Goal 闸门接到 return；后台未完成则 defer
+- [x] Task Graph 文件
+- [x] Teammate + 任务绑定 Worktree（记住：不是沙箱）
+- [x] Cron 至少一次投递
+- [x] Workflow 工具 + journal 续跑
+- [x] Goal 闸门接到 return；后台未完成则 defer
 
 完成标准：`/goal pytest 退出码 0` 会自动续轮直到对话里出现证据，或把控制权交还用户。
 

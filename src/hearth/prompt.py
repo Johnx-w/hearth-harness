@@ -22,8 +22,7 @@ def assemble_system_prompt(workspace: Path) -> str:
 		f"Platform: {_platform_name()}. Trust the bash tool's description for which shell it uses.\n"
 		"Use tools to inspect and change files. Prefer acting over explaining.\n"
 		"When you run a verification command, put the command and its result in the "
-		"conversation so a later goal evaluator can check evidence.\n"
-		"Workflow and teams may still be unwired."
+		"conversation so a later goal evaluator can check evidence."
 	]
 	memory = filter_for_prompt(workspace)
 	if memory:

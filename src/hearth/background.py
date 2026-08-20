@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from typing import Any
 
 from hearth.tools.bash import run_bash
@@ -47,4 +48,32 @@ def start_background(session: Any, block: ToolUse) -> None:
 	if getattr(session, "sync_background", False):
 		work()
 		return
-	threading.Thread(target=work, daemon=True).start()
+	thread = threading.Thread(target=work, daemon=True)
+	thread.start()
+	threads = getattr(session, "background_threads", None)
+	if threads is not None:
+		threads.append(thread)
+
+
+def is_background_running(session: Any) -> bool:
+	threads = getattr(session, "background_threads", [])
+	return any(thread.is_alive() for thread in threads)
+
+
+def wait_for_background(session: Any, timeout: float | None = None) -> None:
+	"""Block until background threads finish or the wait budget runs out."""
+	if timeout is None:
+		timeout = float(getattr(session, "background_wait_timeout", 30.0))
+	deadline = time.monotonic() + timeout
+	while is_background_running(session):
+		remaining = deadline - time.monotonic()
+		if remaining <= 0:
+			return
+		alive = [
+			thread
+			for thread in getattr(session, "background_threads", [])
+			if thread.is_alive()
+		]
+		if not alive:
+			return
+		alive[0].join(timeout=min(0.25, remaining))
