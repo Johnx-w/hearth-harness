@@ -10,8 +10,14 @@ from hearth.types import ToolUse
 def inject_inbound(
 	messages: list[dict[str, Any]],
 	inbound: list[dict[str, Any]] | None = None,
+	cron: Any | None = None,
+	now: float | None = None,
 ) -> None:
 	"""Cron prompts and background notifications land here."""
+	if inbound is None:
+		inbound = []
+	if cron is not None:
+		cron.flush_due(inbound, now)
 	if not inbound:
 		return
 	drained = inbound[:]

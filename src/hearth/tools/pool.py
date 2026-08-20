@@ -4,6 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from hearth.cron import CRON_TOOL, CronBook
 from hearth.memory import MEMORY_TOOL, write_memory
 from hearth.skills import SKILL_TOOL, load_skill
 from hearth.tasks import TASK_TOOL, TaskGraph
@@ -25,6 +26,7 @@ def assemble_tool_pool(
 	fs = WorkspaceFS(workspace)
 	graph = TaskGraph(workspace)
 	team = TeamHub(workspace)
+	cron = CronBook(workspace)
 	schemas = [
 		bash_tool(),
 		*FILE_TOOLS,
@@ -33,6 +35,7 @@ def assemble_tool_pool(
 		MEMORY_TOOL,
 		TASK_TOOL,
 		TEAM_TOOL,
+		CRON_TOOL,
 	]
 	handlers: dict[str, Handler] = {
 		"bash": lambda args: run_bash(args, workspace),
@@ -46,6 +49,7 @@ def assemble_tool_pool(
 		"memory_write": lambda args: write_memory(args, workspace),
 		"task_graph": graph.handle,
 		"teammate": team.handle,
+		"cron": cron.handle,
 	}
 	if session is not None:
 		hub = getattr(session, "mcp", None)

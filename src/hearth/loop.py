@@ -6,6 +6,7 @@ from typing import Any
 
 from hearth.background import inject_inbound, should_run_background, start_background
 from hearth.compact import prepare_context
+from hearth.cron import CronBook
 from hearth.goal import GoalGate
 from hearth.hooks import Hooks
 from hearth.llm import LLMClient
@@ -57,7 +58,11 @@ def run_turn(session: Session) -> TurnResult:
 			)
 		session.turns += 1
 
-		inject_inbound(session.messages, session.inbound)
+		inject_inbound(
+			session.messages,
+			session.inbound,
+			CronBook(session.workspace),
+		)
 		prepare_context(session.messages, session.active_request)
 		tools, handlers = assemble_tool_pool(session.workspace, session.todos, session)
 		system = assemble_system_prompt(session.workspace)
