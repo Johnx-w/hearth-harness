@@ -123,6 +123,12 @@ class TaskGraph:
 				self._save(other)
 		return f"Completed {task.id}"
 
+	def get(self, task_id: str) -> Task | None:
+		return self._load(task_id)
+
+	def save(self, task: Task) -> None:
+		self._save(task)
+
 	def load_all(self) -> list[Task]:
 		if not self.root.is_dir():
 			return []

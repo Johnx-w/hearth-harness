@@ -7,6 +7,7 @@ from typing import Any
 from hearth.memory import MEMORY_TOOL, write_memory
 from hearth.skills import SKILL_TOOL, load_skill
 from hearth.tasks import TASK_TOOL, TaskGraph
+from hearth.teams import TEAM_TOOL, TeamHub
 from hearth.tools.bash import bash_tool, run_bash
 from hearth.tools.filesystem import FILE_TOOLS, WorkspaceFS
 from hearth.tools.subagent import SUBAGENT_TOOL, run_subagent
@@ -23,7 +24,16 @@ def assemble_tool_pool(
 	"""Rebuild schemas and handlers each turn. MCP/Workflow patch here later."""
 	fs = WorkspaceFS(workspace)
 	graph = TaskGraph(workspace)
-	schemas = [bash_tool(), *FILE_TOOLS, TODO_TOOL, SKILL_TOOL, MEMORY_TOOL, TASK_TOOL]
+	team = TeamHub(workspace)
+	schemas = [
+		bash_tool(),
+		*FILE_TOOLS,
+		TODO_TOOL,
+		SKILL_TOOL,
+		MEMORY_TOOL,
+		TASK_TOOL,
+		TEAM_TOOL,
+	]
 	handlers: dict[str, Handler] = {
 		"bash": lambda args: run_bash(args, workspace),
 		"read_file": fs.read_file,
@@ -35,6 +45,7 @@ def assemble_tool_pool(
 		"load_skill": lambda args: load_skill(args, workspace),
 		"memory_write": lambda args: write_memory(args, workspace),
 		"task_graph": graph.handle,
+		"teammate": team.handle,
 	}
 	if session is not None:
 		hub = getattr(session, "mcp", None)
