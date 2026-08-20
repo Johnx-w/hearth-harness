@@ -10,6 +10,7 @@ from hearth.skills import SKILL_TOOL, load_skill
 from hearth.tasks import TASK_TOOL, TaskGraph
 from hearth.teams import TEAM_TOOL, TeamHub
 from hearth.tools.bash import bash_tool, run_bash
+from hearth.workflow import WORKFLOW_TOOL
 from hearth.tools.filesystem import FILE_TOOLS, WorkspaceFS
 from hearth.tools.subagent import SUBAGENT_TOOL, run_subagent
 from hearth.tools.todo import TODO_TOOL, TodoList
@@ -59,4 +60,8 @@ def assemble_tool_pool(
 		if getattr(session, "allow_subagent", True):
 			schemas.append(SUBAGENT_TOOL)
 			handlers["subagent"] = lambda args: run_subagent(args, session)
+		registry = getattr(session, "workflows", None)
+		if registry is not None:
+			schemas.append(WORKFLOW_TOOL)
+			handlers["Workflow"] = lambda args: registry.handle(args, session)
 	return schemas, handlers

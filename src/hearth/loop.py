@@ -15,6 +15,7 @@ from hearth.prompt import assemble_system_prompt
 from hearth.tools.pool import assemble_tool_pool
 from hearth.tools.todo import TodoList
 from hearth.types import StopDecision, TurnResult
+from hearth.workflow import WorkflowRegistry
 
 DEFAULT_MAX_TOKENS = 8000
 
@@ -36,6 +37,7 @@ class Session:
 	inbound: list[dict[str, Any]] = field(default_factory=list)
 	sync_background: bool = False
 	mcp: McpHub = field(default_factory=McpHub)
+	workflows: WorkflowRegistry = field(default_factory=WorkflowRegistry)
 
 
 def tool_result(tool_use_id: str, content: str) -> dict[str, str]:
