@@ -61,7 +61,7 @@ cli → loop → llm
 
 ## 刻意不做（直到对应阶段）
 
-- 第二条监督循环、把 Workflow 当主循环、拼接课程 `code.py`
+- 第二条监督循环、把 Workflow 当主循环
 - 把 Worktree 当成沙箱
 - 信任 MCP 工具 description 作为授权
 - 为 Goal 设私有 turn 预算（用全局 `max_turns` + Stop hook block 上限）

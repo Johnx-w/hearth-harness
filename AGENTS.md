@@ -1,6 +1,6 @@
 # Agent 指令
 
-你在写 **Hearth**，一个类 Claude Code 的 Harness。打开本仓库就是开工，不要去拼接 `learn-claude-code` 的 `s15/s16/s17/code.py`。
+你在写 **Hearth**，一个 coding agent 的 Harness。打开本仓库就是开工。
 
 ## 每次动手前
 
@@ -28,7 +28,6 @@ Goal 接口已经留在 loop 退出点；MVP 的默认闸门无活跃 Goal 时�
 
 ## 不要做
 
-- 复制课程单文件、把三个章节 cat 在一起
 - 在 README 里声称这是 Claude Code
 - 一次 PR 做完 v1+v2+产品层
 - 用 markdown 表格替代该写的代码；计划已在 `docs/`，继续实现即可

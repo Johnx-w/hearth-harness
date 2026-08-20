@@ -4,7 +4,7 @@
 
 ---
 
-你在 Hearth 仓库里。这是一个类 Claude Code 的 coding agent harness，规格来自 learn-claude-code（s01–s17），但源码要在本仓库重写，禁止拼接课程的 s15/s16/s17 `code.py`。
+你在 Hearth 仓库里。这是一个 coding agent harness：一个 Agent Loop，能力进 Tool Pool 或 Hook。
 
 先读：
 

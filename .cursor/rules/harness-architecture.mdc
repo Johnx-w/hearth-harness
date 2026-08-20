@@ -1,5 +1,5 @@
 ---
-description: Hearth harness architecture — one loop, hooks, course as spec
+description: Hearth harness architecture — one loop, hooks, stop gate
 alwaysApply: true
 ---
 
@@ -11,5 +11,4 @@ Read `AGENTS.md` and `CONTEXT.md` before editing. Use those domain words.
 - Permission is a PreToolUse hook, not a branch inside dispatch.
 - Goal is a stop gate on the same loop. The evaluator has no tools.
 - Workflow is a tool backed by a host registry, not a second loop.
-- learn-claude-code is the spec. Do not copy or concatenate chapter `code.py` files.
 - Stay on the current phase in `docs/phased-plan.md`.
