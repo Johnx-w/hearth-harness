@@ -31,6 +31,6 @@ hearth "列出当前目录里的 Python 文件"
 | [docs/from-learn-claude-code.md](docs/from-learn-claude-code.md) | 课程章节映射 |
 | [docs/adr/](docs/adr/) | 不可轻易推翻的决定 |
 
-## 原则（三句话）
+## 原则
 
-只有一个 Agent Loop。新能力进 Tool Pool 或 Hook，不进循环分支。learn-claude-code 是规格不是源码。
+只有一个 Agent Loop。新能力进 Tool Pool 或 Hook，不进循环分支。
