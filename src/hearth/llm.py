@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from typing import Any, Protocol
 
+from hearth.compact import prepare_context
 from hearth.types import LLMResponse, ToolUse
+
+MAX_RATE_RETRIES = 3
+RATE_LIMIT_SLEEP = 0.5
 
 
 class LLMClient(Protocol):
@@ -79,8 +85,13 @@ def tool_response(tool_id: str, name: str, arguments: dict[str, Any], text: str 
 
 
 class AnthropicClient:
-	def __init__(self, client: Any) -> None:
+	def __init__(
+		self,
+		client: Any,
+		sleep: Callable[[float], None] | None = None,
+	) -> None:
 		self._client = client
+		self._sleep = sleep or time.sleep
 
 	def complete(
 		self,
@@ -91,30 +102,56 @@ class AnthropicClient:
 		tools: list[dict[str, Any]],
 		max_tokens: int,
 	) -> LLMResponse:
-		response = self._client.messages.create(
-			model=model,
-			system=system,
-			messages=messages,
-			tools=tools,
-			max_tokens=max_tokens,
-		)
-		tool_uses: list[ToolUse] = []
-		texts: list[str] = []
-		for block in response.content:
-			kind = getattr(block, "type", None)
-			if kind == "tool_use":
-				tool_uses.append(
-					ToolUse(
-						id=block.id,
-						name=block.name,
-						input=dict(block.input or {}),
-					)
+		rate_tries = 0
+		compacted = False
+		while True:
+			try:
+				response = self._client.messages.create(
+					model=model,
+					system=system,
+					messages=messages,
+					tools=tools,
+					max_tokens=max_tokens,
 				)
-			elif kind == "text":
-				texts.append(block.text or "")
-		return LLMResponse(
-			stop_reason=response.stop_reason or "end_turn",
-			text="".join(texts),
-			tool_uses=tool_uses,
-			raw_content=response.content,
-		)
+			except Exception as error:
+				if _is_prompt_too_long(error) and not compacted:
+					prepare_context(messages, "")
+					compacted = True
+					continue
+				if _is_rate_limited(error) and rate_tries < MAX_RATE_RETRIES:
+					self._sleep(RATE_LIMIT_SLEEP * (2 ** rate_tries))
+					rate_tries += 1
+					continue
+				raise
+			return _parse_response(response)
+
+
+def _parse_response(response: Any) -> LLMResponse:
+	tool_uses: list[ToolUse] = []
+	texts: list[str] = []
+	for block in response.content:
+		kind = getattr(block, "type", None)
+		if kind == "tool_use":
+			tool_uses.append(
+				ToolUse(
+					id=block.id,
+					name=block.name,
+					input=dict(block.input or {}),
+				)
+			)
+		elif kind == "text":
+			texts.append(block.text or "")
+	return LLMResponse(
+		stop_reason=response.stop_reason or "end_turn",
+		text="".join(texts),
+		tool_uses=tool_uses,
+		raw_content=response.content,
+	)
+
+
+def _is_rate_limited(error: BaseException) -> bool:
+	return getattr(error, "status_code", None) in {429, 529}
+
+
+def _is_prompt_too_long(error: BaseException) -> bool:
+	return "prompt is too long" in str(error).lower()
