@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
+from hearth.skills import SKILL_TOOL, load_skill
 from hearth.tools.bash import bash_tool, run_bash
 from hearth.tools.filesystem import FILE_TOOLS, WorkspaceFS
 from hearth.tools.todo import TODO_TOOL, TodoList
@@ -16,7 +17,7 @@ def assemble_tool_pool(
 ) -> tuple[list[dict], dict[str, Handler]]:
 	"""Rebuild schemas and handlers each turn. MCP/Workflow patch here later."""
 	fs = WorkspaceFS(workspace)
-	schemas = [bash_tool(), *FILE_TOOLS, TODO_TOOL]
+	schemas = [bash_tool(), *FILE_TOOLS, TODO_TOOL, SKILL_TOOL]
 	handlers: dict[str, Handler] = {
 		"bash": lambda args: run_bash(args, workspace),
 		"read_file": fs.read_file,
@@ -25,5 +26,6 @@ def assemble_tool_pool(
 		"glob": fs.glob,
 		"grep": fs.grep,
 		"todo_write": todos.write,
+		"load_skill": lambda args: load_skill(args, workspace),
 	}
 	return schemas, handlers
