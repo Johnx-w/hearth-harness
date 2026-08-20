@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from hearth.background import inject_inbound, should_run_background
+from hearth.background import inject_inbound, should_run_background, start_background
 from hearth.compact import prepare_context
 from hearth.goal import GoalGate
 from hearth.hooks import Hooks
@@ -31,6 +31,8 @@ class Session:
 	max_tokens: int = DEFAULT_MAX_TOKENS
 	turns: int = 0
 	allow_subagent: bool = True
+	inbound: list[dict[str, Any]] = field(default_factory=list)
+	sync_background: bool = False
 
 
 def tool_result(tool_use_id: str, content: str) -> dict[str, str]:
@@ -53,7 +55,7 @@ def run_turn(session: Session) -> TurnResult:
 			)
 		session.turns += 1
 
-		inject_inbound(session.messages)
+		inject_inbound(session.messages, session.inbound)
 		prepare_context(session.messages, session.active_request)
 		tools, handlers = assemble_tool_pool(session.workspace, session.todos, session)
 		system = assemble_system_prompt(session.workspace)
@@ -97,6 +99,7 @@ def run_turn(session: Session) -> TurnResult:
 				results.append(tool_result(block.id, str(denied)))
 				continue
 			if should_run_background(block):
+				start_background(session, block)
 				results.append(
 					tool_result(
 						block.id,

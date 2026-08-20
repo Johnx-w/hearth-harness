@@ -40,6 +40,7 @@ def bash_tool() -> dict:
 			"type": "object",
 			"properties": {
 				"command": {"type": "string"},
+				"run_in_background": {"type": "boolean"},
 			},
 			"required": ["command"],
 		},
