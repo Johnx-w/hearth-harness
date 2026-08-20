@@ -13,6 +13,7 @@ from hearth.goal import GoalGate
 from hearth.hooks import Hooks
 from hearth.llm import AnthropicClient
 from hearth.loop import Session, last_assistant_text, run_turn
+from hearth.memory import extract_after_turn
 from hearth.permission import Permission
 from hearth.types import ToolUse
 
@@ -46,6 +47,7 @@ def build_session(
 		),
 	)
 	hooks.register("PostToolUse", _log_tool)
+	hooks.register("Stop", lambda messages: _on_stop(workspace, messages))
 	return Session(
 		workspace=workspace,
 		client=client,
@@ -54,6 +56,11 @@ def build_session(
 		goal=GoalGate(),
 		max_turns=max_turns(),
 	)
+
+
+def _on_stop(workspace: Path, messages: list) -> None:
+	extract_after_turn(workspace, messages)
+	return None
 
 
 def _log_tool(block: ToolUse, output: str) -> None:

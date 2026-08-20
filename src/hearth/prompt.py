@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from hearth.memory import filter_for_prompt
 from hearth.skills import catalog_for_prompt
 
 
@@ -22,8 +23,11 @@ def assemble_system_prompt(workspace: Path) -> str:
 		"Use tools to inspect and change files. Prefer acting over explaining.\n"
 		"When you run a verification command, put the command and its result in the "
 		"conversation so a later goal evaluator can check evidence.\n"
-		"Memory, MCP, workflow, and teams may still be unwired."
+		"MCP, workflow, and teams may still be unwired."
 	]
+	memory = filter_for_prompt(workspace)
+	if memory:
+		parts.append(memory)
 	catalog = catalog_for_prompt(workspace)
 	if catalog:
 		parts.append(catalog)
