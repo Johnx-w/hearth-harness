@@ -23,7 +23,7 @@ def assemble_system_prompt(workspace: Path) -> str:
 		"Use tools to inspect and change files. Prefer acting over explaining.\n"
 		"When you run a verification command, put the command and its result in the "
 		"conversation so a later goal evaluator can check evidence.\n"
-		"MCP, workflow, and teams may still be unwired."
+		"Workflow and teams may still be unwired."
 	]
 	memory = filter_for_prompt(workspace)
 	if memory:

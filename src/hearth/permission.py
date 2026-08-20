@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
+from hearth.mcp import server_from_tool_name
 from hearth.types import ToolUse
 
 DENY_SUBSTRINGS = ("rm -rf /", "sudo", "shutdown", "reboot", "mkfs", "dd if=")
@@ -18,12 +19,21 @@ class Permission:
 		ask: Callable[[str], bool] | None = None,
 		*,
 		auto_allow_shell: bool = False,
+		mcp_servers: set[str] | None = None,
 	) -> None:
 		self.workspace = workspace.resolve()
 		self.ask = ask
 		self.auto_allow_shell = auto_allow_shell
+		self.mcp_servers = mcp_servers if mcp_servers is not None else set()
 
 	def __call__(self, block: ToolUse) -> str | None:
+		server = server_from_tool_name(block.name)
+		if block.name.startswith("mcp__"):
+			if server is None:
+				return "Permission denied: malformed MCP tool name"
+			if server not in self.mcp_servers:
+				return "Permission denied: MCP server is not on the host allowlist"
+			return None
 		if block.name == "bash":
 			return self._bash(block.input.get("command", ""))
 		if block.name in FILE_TOOLS:

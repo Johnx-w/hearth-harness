@@ -33,7 +33,12 @@ def assemble_tool_pool(
 		"load_skill": lambda args: load_skill(args, workspace),
 		"memory_write": lambda args: write_memory(args, workspace),
 	}
-	if session is not None and getattr(session, "allow_subagent", True):
-		schemas.append(SUBAGENT_TOOL)
-		handlers["subagent"] = lambda args: run_subagent(args, session)
+	if session is not None:
+		hub = getattr(session, "mcp", None)
+		if hub is not None:
+			schemas.extend(hub.schemas)
+			handlers.update(hub.handlers)
+		if getattr(session, "allow_subagent", True):
+			schemas.append(SUBAGENT_TOOL)
+			handlers["subagent"] = lambda args: run_subagent(args, session)
 	return schemas, handlers

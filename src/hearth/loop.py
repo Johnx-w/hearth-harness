@@ -9,6 +9,7 @@ from hearth.compact import prepare_context
 from hearth.goal import GoalGate
 from hearth.hooks import Hooks
 from hearth.llm import LLMClient
+from hearth.mcp import McpHub
 from hearth.prompt import assemble_system_prompt
 from hearth.tools.pool import assemble_tool_pool
 from hearth.tools.todo import TodoList
@@ -33,6 +34,7 @@ class Session:
 	allow_subagent: bool = True
 	inbound: list[dict[str, Any]] = field(default_factory=list)
 	sync_background: bool = False
+	mcp: McpHub = field(default_factory=McpHub)
 
 
 def tool_result(tool_use_id: str, content: str) -> dict[str, str]:

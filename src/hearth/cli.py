@@ -13,6 +13,7 @@ from hearth.goal import GoalGate
 from hearth.hooks import Hooks
 from hearth.llm import AnthropicClient
 from hearth.loop import Session, last_assistant_text, run_turn
+from hearth.mcp import McpHub
 from hearth.memory import extract_after_turn
 from hearth.permission import Permission
 from hearth.types import ToolUse
@@ -37,6 +38,7 @@ def build_session(
 	client = AnthropicClient(
 		Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 	)
+	hub = McpHub()
 	hooks = Hooks()
 	hooks.register(
 		"PreToolUse",
@@ -44,6 +46,7 @@ def build_session(
 			workspace,
 			ask=_ask,
 			auto_allow_shell=auto_allow_shell,
+			mcp_servers=hub.servers,
 		),
 	)
 	hooks.register("PostToolUse", _log_tool)
@@ -55,6 +58,7 @@ def build_session(
 		hooks=hooks,
 		goal=GoalGate(),
 		max_turns=max_turns(),
+		mcp=hub,
 	)
 
 
