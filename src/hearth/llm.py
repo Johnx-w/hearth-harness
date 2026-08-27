@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import time
 from collections.abc import Callable
 from typing import Any, Protocol
@@ -9,6 +10,14 @@ from hearth.types import LLMResponse, ToolUse
 
 MAX_RATE_RETRIES = 3
 RATE_LIMIT_SLEEP = 0.5
+OVERLOAD_SLEEP = 2.0
+JITTER_RATIO = 0.25
+CIRCUIT_FAILURE_THRESHOLD = 2
+CIRCUIT_COOLDOWN_SECONDS = 30.0
+
+
+class CircuitOpenError(Exception):
+	"""Raised when repeated 429/529 have opened the client circuit."""
 
 
 class LLMClient(Protocol):
@@ -89,9 +98,15 @@ class AnthropicClient:
 		self,
 		client: Any,
 		sleep: Callable[[float], None] | None = None,
+		rng: Callable[[], float] | None = None,
+		clock: Callable[[], float] | None = None,
 	) -> None:
 		self._client = client
 		self._sleep = sleep or time.sleep
+		self._rng = rng or random.random
+		self._clock = clock or time.monotonic
+		self._consecutive_failures = 0
+		self._circuit_until: float | None = None
 
 	def complete(
 		self,
@@ -102,6 +117,7 @@ class AnthropicClient:
 		tools: list[dict[str, Any]],
 		max_tokens: int,
 	) -> LLMResponse:
+		self._raise_if_circuit_open()
 		rate_tries = 0
 		compacted = False
 		while True:
@@ -118,12 +134,38 @@ class AnthropicClient:
 					prepare_context(messages, "")
 					compacted = True
 					continue
-				if _is_rate_limited(error) and rate_tries < MAX_RATE_RETRIES:
-					self._sleep(RATE_LIMIT_SLEEP * (2 ** rate_tries))
+				status = _status_code(error)
+				if status in {429, 529} and rate_tries < MAX_RATE_RETRIES:
+					base = OVERLOAD_SLEEP if status == 529 else RATE_LIMIT_SLEEP
+					self._sleep(_retry_delay(base, rate_tries, self._rng()))
 					rate_tries += 1
 					continue
+				if status in {429, 529}:
+					self._note_rate_failure()
 				raise
+			self._consecutive_failures = 0
+			self._circuit_until = None
 			return _parse_response(response)
+
+	def _raise_if_circuit_open(self) -> None:
+		if self._circuit_until is None:
+			return
+		if self._clock() < self._circuit_until:
+			raise CircuitOpenError(
+				"LLM circuit is open after repeated 429/529; wait before retrying"
+			)
+		self._circuit_until = None
+
+	def _note_rate_failure(self) -> None:
+		self._consecutive_failures += 1
+		if self._consecutive_failures >= CIRCUIT_FAILURE_THRESHOLD:
+			self._circuit_until = self._clock() + CIRCUIT_COOLDOWN_SECONDS
+
+
+def _retry_delay(base: float, attempt: int, unit_interval: float) -> float:
+	backoff = base * (2 ** attempt)
+	jitter = max(0.0, min(1.0, unit_interval))
+	return backoff * (1 + JITTER_RATIO * jitter)
 
 
 def _parse_response(response: Any) -> LLMResponse:
@@ -149,8 +191,8 @@ def _parse_response(response: Any) -> LLMResponse:
 	)
 
 
-def _is_rate_limited(error: BaseException) -> bool:
-	return getattr(error, "status_code", None) in {429, 529}
+def _status_code(error: BaseException) -> int | None:
+	return getattr(error, "status_code", None)
 
 
 def _is_prompt_too_long(error: BaseException) -> bool:
